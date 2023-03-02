@@ -48,7 +48,6 @@ public class PlayerController : MonoBehaviour
         if (finger != _finger) return;
         Vector3 fingerPos = Camera.main.ScreenToWorldPoint(finger.ScreenPosition);
         fingerPos.z = 0;
-        Debug.Log(fingerPos);
 
         _player.SetShootAim(fingerPos);
     }

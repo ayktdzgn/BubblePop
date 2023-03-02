@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Player : PlayerBase
 {
+    [SerializeField] LayerMask _raycasLayer;
     [SerializeField] Transform _shootPoint;
     [SerializeField] int _reflectionCount;
     [SerializeField] float _maxRange;
@@ -11,7 +13,7 @@ public class Player : PlayerBase
     private LineRenderer _lr;
     Bubble _currentBubble;
     Ray ray;
-    RaycastHit hit;
+    //RaycastHit hit;
 
     protected override void Awake()
     {
@@ -30,12 +32,17 @@ public class Player : PlayerBase
 
         for (int i = 0; i < _reflectionCount; i++)
         {
-            if (Physics.Raycast(ray.origin,ray.direction,out hit, remainingLenght))
+            var hits = Physics2D.RaycastAll(ray.origin, ray.direction, remainingLenght, _raycasLayer);
+            var sortedHits = hits.OrderBy(h => Vector2.Distance(h.point, transform.position)).ToList();
+            if (sortedHits.Count <= 0) break;
+
+            var hit = sortedHits[0];
+            if (hit)
             {
                 _lr.positionCount += 1;
                 _lr.SetPosition(_lr.positionCount -1 ,hit.point);
-                remainingLenght -= Vector3.Distance(ray.origin,hit.point);
-                ray = new Ray(hit.point , Vector3.Reflect(ray.direction,hit.normal));
+                remainingLenght -= Vector2.Distance(ray.origin,hit.point);
+                ray = new Ray(hit.point , Vector2.Reflect(ray.direction,hit.normal));
                 if (hit.collider.tag != "Wall")
                     break;
             }
