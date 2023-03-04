@@ -26,12 +26,10 @@ public abstract class LevelBase : MonoBehaviour
         gameObject.SetActive(true);
         _game = game;
         _gameView = gameView;
-        _player.OnLevelInit();
     }
 
     public virtual void Play()
     {
-        Debug.Log("Level Start");
         _isPlaying = true;
         _player.OnLevelStart();
     }

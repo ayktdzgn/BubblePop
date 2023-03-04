@@ -4,6 +4,7 @@ using UnityEngine;
 
 public abstract class PlayerBase : MonoBehaviour
 {
+    protected Level _level;
     protected PlayerController _playerController;
 
     protected virtual void Awake()
@@ -11,9 +12,9 @@ public abstract class PlayerBase : MonoBehaviour
         _playerController = GetComponent<PlayerController>();
     }
 
-    public virtual void OnLevelInit()
+    public virtual void OnLevelInit(Level level)
     {
-
+        _level = level;
     }
 
     public virtual void OnLevelStart()

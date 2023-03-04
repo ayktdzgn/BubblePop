@@ -8,4 +8,10 @@ public class Tile : MonoBehaviour
     {
         gameObject.name = name;
     }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawCube(transform.position,Vector3.one);
+    }
 }

@@ -33,14 +33,14 @@ public class PlayerController : MonoBehaviour
     {
         if (finger != _finger) return;
         _finger = null;
-        
+
+        _player.Shoot();
     }
 
     private void LeanTouch_OnFingerDown(LeanFinger finger)
     {
         if (_finger != null) return;
         _finger = finger;
-
     }
 
     private void LeanTouch_OnFingerUpdate(LeanFinger finger)

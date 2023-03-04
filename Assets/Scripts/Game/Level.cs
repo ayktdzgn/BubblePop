@@ -5,17 +5,23 @@ using UnityEngine;
 public class Level : LevelBase
 {
     [SerializeField] int _goalScore = 1000;
-    [SerializeField] int _levelStartHeight = 5;
+    [SerializeField] int _createdBubbleRowCount = 5;
     [SerializeField] Grid _grid;
     [SerializeField] Bubble _bubble;
+
+    public Grid Grid { get => _grid; }
+
+    public override void Init(GameView gameView, Game game)
+    {
+        base.Init(gameView,game);
+        _player.OnLevelInit(this);
+    }
 
     private void Start()
     {
         _grid.CreateGrid();
-        StartBubbleCreate(_levelStartHeight);
+        BubbleCreateOnStart(_createdBubbleRowCount);
     }
-
-   
 
     protected override void Update()
     {
@@ -26,20 +32,33 @@ public class Level : LevelBase
         }
     }
 
-    private void StartBubbleCreate(int levelStartHeight)
+    private void BubbleCreateOnStart(int rowCount)
     {
-        for (int i = 0; i < levelStartHeight; i++)
+        for (int i = 1; i <= rowCount; i++)
         {
-            CreateRandomBubbleRow(i , _grid.gridSize.x);
+            if(i <= _grid.gridSize.y)
+            {
+                int y = _grid.gridSize.y - i;
+                CreateRandomBubbleRow(y, _grid.gridSize.x);
+            }
         }
     }
 
-    private void CreateRandomBubbleRow(int y, int count)
+    private void CreateRandomBubbleRow(int row, int count)
     {
         for (int i = 0; i < count; i++)
         {
-            var newBubble = Instantiate(_bubble, _grid.TileArr[i, y].transform);
-            newBubble.SetBubbleProperties(Mathf.RoundToInt(Mathf.Pow(2, Random.Range(1,11))));
+            var newBubble = CreateRandomBubble(_grid.TileArr[i, row].transform);
+            newBubble.SpawnScaleAnimation();
+            newBubble.Index = new Vector2Int(i,row);
         }
+    }
+
+    public Bubble CreateRandomBubble(Transform parent)
+    {
+        var bubble = Instantiate(_bubble, parent);
+        bubble.SetBubbleProperties(Mathf.RoundToInt(Mathf.Pow(2, Random.Range(1, 11))));
+
+        return bubble;
     }
 }

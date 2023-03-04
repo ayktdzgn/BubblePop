@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using DG.Tweening;
 
 public class Bubble : MonoBehaviour
 {
@@ -9,11 +10,21 @@ public class Bubble : MonoBehaviour
     [SerializeField] Color[] _colors;
 
     SpriteRenderer _spriteRenderer;
+    Vector2Int _index;
     int _value;
+
+    public Vector2Int Index { get => _index; set => _index = value; }
+    public int Value { get => _value; }
 
     private void Awake()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    public void SpawnScaleAnimation()
+    {
+        transform.localScale = Vector3.zero;
+        transform.DOScale(Vector3.one, 0.25f);
     }
 
     public void SetBubbleProperties(int value)
@@ -29,6 +40,11 @@ public class Bubble : MonoBehaviour
         {
             _spriteRenderer.color = _colors[Mathf.RoundToInt(FindPowerOfTwo(value))];
         }
+    }
+
+    public void Pop()
+    {
+        Destroy(gameObject);
     }
 
     int FindPowerOfTwo(int value)

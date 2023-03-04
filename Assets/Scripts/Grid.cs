@@ -14,8 +14,11 @@ public class Grid : MonoBehaviour
 
     public void CreateGrid()
     {
+        //Give extra row for Aim
+        gridSize.y += 1;
+
         _tileArr = new GameObject[gridSize.x, gridSize.y];
-        for (int y = 0; y < gridSize.y; y++)
+        for (int y = gridSize.y-1; y >=0 ; y--)
         {
             for (int x = 0; x < gridSize.x; x++)
             {
@@ -47,6 +50,11 @@ public class Grid : MonoBehaviour
         transform.DOMove(newPos , 0.2f); 
     }
 
+    void RemoveOldRow()
+    {
+
+    }
+
     void ArrayTransfer(ref GameObject[,] target, GameObject[,] source, int xSize , int ySize)
     {
         for (int y = 0; y < ySize; y++)
@@ -58,7 +66,7 @@ public class Grid : MonoBehaviour
         }
     }
 
-    Vector3 GetPositionForHexCordinate(Vector2Int pos)
+    public Vector3 GetPositionForHexCordinate(Vector2Int pos)
     {
         int columb = pos.x;
         int row = pos.y;
@@ -67,16 +75,33 @@ public class Grid : MonoBehaviour
 
         shouldOffset = (row % 2) == 1;
 
-        Vector3 worldPos = new Vector3(columb, 0, 0) * tileSize + new Vector3(0, row, 0) * tileSize * 0.75f + (shouldOffset ? Vector3.right * tileSize * 0.5f : Vector3.zero);
+        Vector3 worldPos = new Vector3(columb, 0, 0) * tileSize + new Vector3(0, row, 0) * tileSize * 0.9f + (shouldOffset ? Vector3.right * tileSize * 0.5f : Vector3.zero);
 
         return worldPos + transform.position;
+    }
+
+    public Vector2Int GetClosestNeighbour(Vector3 worldPos, Vector2Int index)
+    {
+        float closest = 1f;
+        Vector2Int closestNeighbour = Vector2Int.one;
+
+        foreach (var neighbour in NeighbourList(index))
+        {
+            float distance = Vector3.Distance(GetPositionForHexCordinate(neighbour), worldPos);
+            if (distance < closest)
+            {
+                closest = distance;
+                closestNeighbour = neighbour;
+            }
+        }
+        return closestNeighbour;
     }
 
     public List<Vector2Int> NeighbourList(Vector2Int index)
     {
         bool hasOffset = (index.y % 2) == 1;
 
-        return new List<Vector2Int>
+        var tempList = new List<Vector2Int>
         {
             index + new Vector2Int(-1,0),
             index + new Vector2Int(1,0),
@@ -87,6 +112,17 @@ public class Grid : MonoBehaviour
             index + new Vector2Int(hasOffset ? 1 : -1, -1),
             index + new Vector2Int(0,-1)
         };
+
+        List<Vector2Int> neighbourList = new List<Vector2Int>();
+        foreach (var neighbour in tempList)
+        {
+            if ((neighbour.x >= 0 && neighbour.x < gridSize.x) && (neighbour.y >= 0 && neighbour.y < gridSize.y))
+            {
+                neighbourList.Add(neighbour);
+            }
+        }
+
+        return neighbourList;
     }
 
     private void OnDrawGizmosSelected()
