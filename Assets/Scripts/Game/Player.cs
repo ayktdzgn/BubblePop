@@ -13,13 +13,14 @@ public class Player : PlayerBase
     [SerializeField] Transform _shootPoint;
     [SerializeField] int _reflectionCount;
     [SerializeField] float _lineMaxRange;
+    [SerializeField] LayerMask _hitLayers;
 
     private LineRenderer _lr;
     Bubble _currentBubble;
     Bubble _nextBubble;
     Vector2Int _indicatorTartgetIndex;
     bool _isIndicatorTargeted;
-    bool _isAbleToShoot = true;
+    bool _isReadyToShoot = true;
     List<Vector3> Points = new List<Vector3>();
     int currentReflections;
 
@@ -51,7 +52,7 @@ public class Player : PlayerBase
             _nextBubble = null;
             CreateNextBubble();
 
-            _isAbleToShoot = true;
+            _isReadyToShoot = true;
         });
     }
 
@@ -67,8 +68,12 @@ public class Player : PlayerBase
 
     void AimHitBubble(Bubble bubble,Vector3 hitPoint)
     {
-        _indicatorTartgetIndex = _level.Grid.GetClosestNeighbour(hitPoint,bubble.Index);
-        SetIndicatior(_level.Grid.GetPositionForHexCordinate(_indicatorTartgetIndex));
+        var tempIndex = _level.Grid.GetClosestNeighbour(hitPoint,bubble.Index);
+        if(!_level.Grid.TileArr[tempIndex.x, tempIndex.y].IsOccupied)
+        {
+            _indicatorTartgetIndex = tempIndex;
+            SetIndicatior(_level.Grid.GetPositionForHexCordinate(_indicatorTartgetIndex));
+        }
     }
 
     void SetIndicatior(Vector3 pos)
@@ -98,9 +103,9 @@ public class Player : PlayerBase
 
     public void SetShootAim(Vector3 shootPos)
     {
-        if (!_isAbleToShoot) return;
+        if (!_isReadyToShoot) return;
 
-        var hitData = Physics2D.Raycast(_shootPoint.position, (shootPos - _shootPoint.position).normalized, _lineMaxRange);
+        var hitData = Physics2D.Raycast(_shootPoint.position, (shootPos - _shootPoint.position).normalized, _lineMaxRange, _hitLayers);
 
         currentReflections = 0;
         Points.Clear();
@@ -137,7 +142,7 @@ public class Player : PlayerBase
         Vector2 inDirection = (hitData.point - origin).normalized;
         Vector2 newDirection = Vector2.Reflect(inDirection, hitData.normal);
 
-        var newHitData = Physics2D.Raycast(hitData.point + (newDirection * 0.0001f), newDirection * 100, _lineMaxRange);
+        var newHitData = Physics2D.Raycast(hitData.point + (newDirection * 0.0001f), newDirection * 100, _lineMaxRange, _hitLayers);
 
         if (newHitData)
         {
@@ -159,23 +164,27 @@ public class Player : PlayerBase
 
     public void Shoot()
     {
-        if (!_isAbleToShoot) return;
+        if (!_isReadyToShoot) return;
         //Shoot
         if (_isIndicatorTargeted)
         {
-            _isAbleToShoot = false;
+            _isReadyToShoot = false;
             Points.RemoveAt(Points.Count - 1);
             Points.Add(_bubbleIndicator.position);
             Vector3[] path = Points.ToArray();
+            Vector2Int targetIndex = _indicatorTartgetIndex;
             _currentBubble.transform.DOPath(path, 0.4f, PathType.Linear, PathMode.Ignore).OnComplete(()=>
             {
-                _currentBubble.gameObject.layer = 0;
-                _currentBubble.transform.SetParent(_level.Grid.TileArr[_indicatorTartgetIndex.x, _indicatorTartgetIndex.y].transform);
-                _currentBubble.Index = _indicatorTartgetIndex;
+                _level.Grid.TileArr[targetIndex.x, targetIndex.y].IsOccupied = true;
+                _level.Grid.TileArr[targetIndex.x, targetIndex.y].Bubble = _currentBubble;
+
+                _currentBubble.gameObject.layer = LayerMask.NameToLayer("Ball");
+                _currentBubble.transform.SetParent(_level.Grid.TileArr[targetIndex.x, targetIndex.y].transform);
+                _currentBubble.Index = targetIndex;
                 _currentBubble = null;
                 SetCurrentBubble();
 
-                GameEvent.OnBubbleReachTargetEvent?.Invoke(_indicatorTartgetIndex);
+                GameEvent.OnBubbleReachTargetEvent?.Invoke(targetIndex);
             });
         }
 

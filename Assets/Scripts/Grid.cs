@@ -6,24 +6,29 @@ using DG.Tweening;
 
 public class Grid : MonoBehaviour
 {
+    const float TILE_HEIGHT_OFFSET_RATIO = 0.9f;
+
     public Vector2Int gridSize;
     public float tileSize = 0.9f;
-    GameObject[,] _tileArr;
+    [SerializeField] Tile _tilePrefab;
+    Tile[,] _tileArr;
 
-    public GameObject[,] TileArr { get => _tileArr;}
+    public Tile[,] TileArr { get => _tileArr;}
 
+    //Create Grid At Start [0,size.y-1]
     public void CreateGrid()
     {
         //Give extra row for Aim
         gridSize.y += 1;
 
-        _tileArr = new GameObject[gridSize.x, gridSize.y];
+        _tileArr = new Tile[gridSize.x, gridSize.y]; // new GameObject[gridSize.x, gridSize.y];
         for (int y = gridSize.y-1; y >=0 ; y--)
         {
             for (int x = 0; x < gridSize.x; x++)
             {
-                GameObject tile = new GameObject($"Tile_{x}-{y}");
+                Tile tile = Instantiate(_tilePrefab);//new GameObject($"Tile_{x}-{y}");
                 _tileArr[x, y] = tile;
+                tile.name = $"Tile_{x}-{y}";
                 tile.transform.position = GetPositionForHexCordinate(new Vector2Int(x,y));
                 tile.transform.SetParent(transform);
             }
@@ -33,20 +38,21 @@ public class Grid : MonoBehaviour
     public void AddNewRow()
     {
         gridSize = new Vector2Int(gridSize.x, gridSize.y + 1);
-        GameObject[,] tempArr = _tileArr;    
-        _tileArr = new GameObject[gridSize.x,gridSize.y];
+        Tile[,] tempArr = _tileArr;    
+        _tileArr = new Tile[gridSize.x,gridSize.y];
 
         ArrayTransfer(ref _tileArr,tempArr,gridSize.x,gridSize.y-1);
 
         for (int x = 0; x < gridSize.x; x++)
         {
-            GameObject tile = new GameObject($"Tile_{x}-{gridSize.y}");
+            Tile tile = Instantiate(_tilePrefab); //GameObject tile = new GameObject($"Tile_{x}-{gridSize.y}");
+            tile.name = $"Tile_{x}-{gridSize.y}";           
             _tileArr[x, gridSize.y-1] = tile;
             tile.transform.position = GetPositionForHexCordinate(new Vector2Int(x, gridSize.y-1));
             tile.transform.SetParent(transform);
         }
 
-        Vector3 newPos = transform.position + new Vector3(0, -tileSize * 0.75f, 0);
+        Vector3 newPos = transform.position + new Vector3(0, -tileSize * TILE_HEIGHT_OFFSET_RATIO, 0);
         transform.DOMove(newPos , 0.2f); 
     }
 
@@ -55,7 +61,7 @@ public class Grid : MonoBehaviour
 
     }
 
-    void ArrayTransfer(ref GameObject[,] target, GameObject[,] source, int xSize , int ySize)
+    void ArrayTransfer(ref Tile[,] target, Tile[,] source, int xSize , int ySize)
     {
         for (int y = 0; y < ySize; y++)
         {
@@ -75,7 +81,7 @@ public class Grid : MonoBehaviour
 
         shouldOffset = (row % 2) == 1;
 
-        Vector3 worldPos = new Vector3(columb, 0, 0) * tileSize + new Vector3(0, row, 0) * tileSize * 0.9f + (shouldOffset ? Vector3.right * tileSize * 0.5f : Vector3.zero);
+        Vector3 worldPos = new Vector3(columb, 0, 0) * tileSize + new Vector3(0, row, 0) * tileSize * TILE_HEIGHT_OFFSET_RATIO + (shouldOffset ? Vector3.right * tileSize * 0.5f : Vector3.zero);
 
         return worldPos + transform.position;
     }
@@ -127,7 +133,7 @@ public class Grid : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.green;
+        Gizmos.color = Color.yellow;
 
         Gizmos.DrawLine(GetPositionForHexCordinate(Vector2Int.zero) , GetPositionForHexCordinate(new Vector2Int(0,gridSize.y)));
         Gizmos.DrawLine(GetPositionForHexCordinate(Vector2Int.zero), GetPositionForHexCordinate(new Vector2Int(gridSize.x, 0)));

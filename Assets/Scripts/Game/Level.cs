@@ -8,6 +8,8 @@ public class Level : LevelBase
     [SerializeField] int _createdBubbleRowCount = 5;
     [SerializeField] Grid _grid;
     [SerializeField] Bubble _bubble;
+    [SerializeField] BubbleSpawner _bubbleSpawnerGrid;
+    [SerializeField] BubbleSpawner _bubbleSpawnerShoot;
 
     public Grid Grid { get => _grid; }
 
@@ -48,16 +50,27 @@ public class Level : LevelBase
     {
         for (int i = 0; i < count; i++)
         {
-            var newBubble = CreateRandomBubble(_grid.TileArr[i, row].transform);
+            var newBubble = CreateRandomBubble(new Vector2Int(i, row));
             newBubble.SpawnScaleAnimation();
-            newBubble.Index = new Vector2Int(i,row);
         }
     }
 
-    public Bubble CreateRandomBubble(Transform parent)
+    public Bubble CreateRandomBubble(Vector2Int gridIndex)
+    {       
+        var bubble = Instantiate(_bubble, _grid.TileArr[gridIndex.x, gridIndex.y].transform);
+        bubble.Index = gridIndex;
+        bubble.SetBubbleProperties(_bubbleSpawnerGrid.GetRandomSpawnedValue());
+
+        _grid.TileArr[gridIndex.x, gridIndex.y].IsOccupied = true;
+        _grid.TileArr[gridIndex.x, gridIndex.y].Bubble = bubble;
+
+        return bubble;
+    }
+
+    public Bubble CreateRandomBubble(Transform transform)
     {
-        var bubble = Instantiate(_bubble, parent);
-        bubble.SetBubbleProperties(Mathf.RoundToInt(Mathf.Pow(2, Random.Range(1, 11))));
+        var bubble = Instantiate(_bubble, transform);
+        bubble.SetBubbleProperties(_bubbleSpawnerShoot.GetRandomSpawnedValue());
 
         return bubble;
     }

@@ -6,7 +6,6 @@ using System.Linq;
 
 public class MatchController : MonoBehaviour
 {
-    Level _level;
     Grid _grid;
 
     List<Bubble> _matchBubbleList = new List<Bubble>();
@@ -15,8 +14,7 @@ public class MatchController : MonoBehaviour
 
     private void Awake()
     {
-        _level = GetComponent<Level>();
-        _grid = _level.Grid;
+        _grid = GetComponent<Grid>();
     }
 
     private void Start()
@@ -27,7 +25,7 @@ public class MatchController : MonoBehaviour
     void BubbleReachTarget(Vector2Int index)
     {
         var neighbours = _grid.NeighbourList(index);
-        PushNeighbours(_grid.GetPositionForHexCordinate(index),neighbours);
+        PushNeighbours(_grid.GetPositionForHexCordinate(index), neighbours);
 
         CheckIndexForMatch(index);
     }
@@ -47,14 +45,7 @@ public class MatchController : MonoBehaviour
     {
         //Get Neighbours
         var neighbours = _grid.NeighbourList(index);
-        Bubble bubble= _grid.TileArr[index.x, index.y].GetComponentInChildren<Bubble>();
-
-        //Debug.Log(bubble,bubble.gameObject);
-        //Debug.Log(neighbours.Count);
-        //foreach (var item in neighbours)
-        //{
-        //    Debug.Log(item);
-        //}
+        Bubble bubble = _grid.TileArr[index.x, index.y].Bubble;
 
         foreach (var neighbour in neighbours)
         {
@@ -63,11 +54,9 @@ public class MatchController : MonoBehaviour
             {
                 //kontrol edilmişler listesine ekliyoruz ki bir daha kontrol edilmesin
                 _checkedIndexList.Add(neighbour);
-                Bubble neighbourBubble = _grid.TileArr[neighbour.x, neighbour.y].GetComponentInChildren<Bubble>();
+                Bubble neighbourBubble = _grid.TileArr[neighbour.x, neighbour.y].Bubble;
 
-                //Debug.Log(neighbour + " - Value : " + neighbourBubble.Value +" || Shooted Bubble Value : " + bubble.Value, neighbourBubble.gameObject);
-
-                if (neighbourBubble != null)
+                if (neighbourBubble != null && bubble != null)
                 {
                     //Bubble'lar match oluyorsa match olan bubble'ı geri döndürüyor bize
                     var matchedBubble = CheckMatch(bubble, neighbourBubble);
@@ -76,11 +65,11 @@ public class MatchController : MonoBehaviour
                         //Daha önce eşleşmiş bubble değilse listeye ekliyoruz
                         if (!_matchBubbleList.Contains(bubble))
                             _matchBubbleList.Add(bubble);
-                        if(!_matchBubbleList.Contains(matchedBubble))
+                        if (!_matchBubbleList.Contains(matchedBubble))
                             _matchBubbleList.Add(matchedBubble);
                     }
                 }
-            }          
+            }
         }
         //Komşuları Kontrol edilecek match olmuş bubble var mı
         //varsa, o index'i alıp tekrardan fonksiyonu çalıştır
@@ -93,42 +82,161 @@ public class MatchController : MonoBehaviour
         }
         else
         {
-            if(_matchBubbleList.Count > 0)
-                MergeBubbles(_matchBubbleList);
+            if (_matchBubbleList.Count > 0)
+                StartCoroutine(MergeBubblesIE(_matchBubbleList));//MergeBubbles(_matchBubbleList);
         }
     }
 
     public void MergeBubbles(List<Bubble> bubbleList)
     {
-        Debug.Log("In Merge!");
         //Find bubble index which was added last in the list
         int lastBubbleIndex = bubbleList.Count - 1;
         for (int i = 0; i < lastBubbleIndex; i++)
         {
+            //Set Tile occupied false
+            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].IsOccupied = false;
+            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].Bubble = null;
+
             //First bubble moved first, if it reach then others too
             if (i == 0)
                 bubbleList[i].transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.2f).OnComplete(() =>
                 {
-                    for (int i = 0; i < lastBubbleIndex; i++)
-                    {
-                        bubbleList[i].Pop();
-                    }
+                    bubbleList[i].Pop();
+
                     int powerOfTwo = FindPowerOfTwo(bubbleList[lastBubbleIndex].Value) + 1;
-                    int newValue = Mathf.RoundToInt(Mathf.Pow(2,powerOfTwo + lastBubbleIndex));
+                    int newValue = Mathf.RoundToInt(Mathf.Pow(2, powerOfTwo + lastBubbleIndex));
                     bubbleList[lastBubbleIndex].SetBubbleProperties(newValue);
+
                     //Merge olduktan sonra yeni oluşan bubble ile etrafında merge var mı kontrollü
                     CheckIndexForMatch(bubbleList[lastBubbleIndex].Index);
                 });
             else
-                bubbleList[i].transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.2f);
+            {
+                var bubble = bubbleList[i];
+                bubble.transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.2f).OnComplete(() => { bubble.Pop(); });
+
+            }
         }
+
+        for (int i = 0; i < lastBubbleIndex; i++)
+        {
+            //todo: Warn neighbours for falling
+            CheckForFallingNeighbours(bubbleList[i].Index);
+        }
+    }
+
+    IEnumerator MergeBubblesIE(List<Bubble> bubbleList)
+    {
+        //Find bubble index which was added last in the list
+        int mergedCount = 0;
+        int lastBubbleIndex = bubbleList.Count - 1;
+        for (int i = 0; i < lastBubbleIndex; i++)
+        {
+            //Set Tile occupied false
+            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].IsOccupied = false;
+            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].Bubble = null;
+
+            //First bubble moved first, if it reach then others too
+            bubbleList[i].transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.35f).OnComplete(() => { mergedCount++; });
+            bubbleList[i].PopEffect();
+        }
+        yield return new WaitUntil(()=> mergedCount >= bubbleList.Count - 1);
+        Debug.Log(mergedCount + "/" + bubbleList.Count);
+
+        int powerOfTwo = FindPowerOfTwo(bubbleList[lastBubbleIndex].Value) + 1;
+        int newValue = Mathf.RoundToInt(Mathf.Pow(2, powerOfTwo + lastBubbleIndex));
+        bubbleList[lastBubbleIndex].SetBubbleProperties(newValue);
+
+        for (int i = 0; i < lastBubbleIndex; i++)
+        {
+            bubbleList[i].Pop();
+            //todo: Warn neighbours for falling
+            CheckForFallingNeighbours(bubbleList[i].Index);
+        }
+
+        //Merge olduktan sonra yeni oluşan bubble ile etrafında merge var mı kontrollü
+        Debug.Log(bubbleList[lastBubbleIndex].Index, bubbleList[lastBubbleIndex].gameObject);
+        CheckIndexForMatch(bubbleList[lastBubbleIndex].Index);
+
+        yield return new WaitForEndOfFrame();
+    }
+
+    void CheckForFallingNeighbours(Vector2Int index)
+    {
+        var neighbours = _grid.NeighbourList(index);
+        bool isNeighbourFallen = false;
+        Vector2Int needToCheck = new Vector2Int(int.MaxValue , int.MaxValue);
+
+        foreach (var neighbour in neighbours)
+        {
+            if(_grid.TileArr[neighbour.x, neighbour.y].IsOccupied)
+                isNeighbourFallen = CheckForFalling(neighbour);
+            if (isNeighbourFallen)
+            {
+                needToCheck = neighbour;
+                break;
+            }
+        }
+        if (isNeighbourFallen)
+            CheckForFallingNeighbours(needToCheck);
+    }
+
+    bool CheckForFalling(Vector2Int index)
+    {
+        if (index.y >= _grid.gridSize.y-1) return false;
+        bool isFallen = false;
+
+        //Check For Vertical
+        //if even row-> -1 & itself
+        //if odd row-> itself & +1
+        if (index.y % 2 == 0)//even
+        {
+            if (index.x - 1 >= 0)
+            {
+                isFallen = !(_grid.TileArr[index.x - 1, index.y + 1].IsOccupied || _grid.TileArr[index.x, index.y + 1].IsOccupied);
+            }else
+                isFallen = !_grid.TileArr[index.x, index.y + 1].IsOccupied;
+
+        }
+        else//odd
+        {
+            if (index.x + 1 < _grid.gridSize.x-1)
+            {
+                isFallen = !(_grid.TileArr[index.x + 1, index.y + 1].IsOccupied || _grid.TileArr[index.x, index.y + 1].IsOccupied);
+            }else
+                isFallen = !_grid.TileArr[index.x, index.y + 1].IsOccupied;
+        }
+
+        //Check for Horizontal
+        //if (index.x > 0 && index.x < _grid.gridSize.x - 1)
+        //{
+        //    //-1 & +1
+        //    isFallen = !_grid.TileArr[index.x - 1, index.y].IsOccupied;
+        //    isFallen = !_grid.TileArr[index.x + 1, index.y].IsOccupied;
+        //}
+        //else if(index.x <= 0)
+        //{
+        //    //+1 
+        //}
+        //else
+        //{
+        //    //-1 
+        //}
+
+        if (isFallen)
+        {
+            _grid.TileArr[index.x, index.y].Bubble.Fall();
+            _grid.TileArr[index.x, index.y].IsOccupied = false;
+            _grid.TileArr[index.x, index.y].Bubble = null;
+        }
+
+        return isFallen;
     }
 
     Bubble CheckMatch(Bubble bubble, Bubble neighbourBubble)
     {
         if (bubble.Value == neighbourBubble.Value)
         {
-            //Debug.Log($"Bubble 1 : {bubble.Index} - {bubble.Value} | Bubble 2 : {neighbourBubble.Index} - {neighbourBubble.Value}");
             //Daha sonra komşularını kontrol etmek için listeye ekliyoruz
             _checkAfterIndexList.Add(neighbourBubble.Index);
             return neighbourBubble;

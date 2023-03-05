@@ -153,7 +153,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &8083813807404348948
 Transform:
   m_ObjectHideFlags: 0
@@ -162,7 +162,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3884058703871971327}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.05, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -209,13 +209,13 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: f9015825502034ef6ac54b0984451519, type: 3}
-  m_Color: {r: 0.1792453, g: 0.1792453, b: 0.1792453, a: 0.94509804}
+  m_SortingOrder: -1
+  m_Sprite: {fileID: 21300000, guid: ec26266c26ef444cc81c4acb00f9212a, type: 3}
+  m_Color: {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 0.47058824}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 5.85, y: 5.85}
+  m_Size: {x: 8.54, y: 8.54}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -423,19 +423,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec9c6817240144b4c9d8ad347bcbe8c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _popParticle: {fileID: 2122866187593689239, guid: 423ece7bf236a43848be30bd75d83fe6, type: 3}
   _valueText: {fileID: 2533714530247131861}
   _colors:
-  - {r: 0.9811321, g: 0.9138505, b: 0.7358491, a: 1}
-  - {r: 0.6187332, g: 0.8584906, b: 0.44949272, a: 1}
-  - {r: 0.8679245, g: 0.58648133, b: 0.30704877, a: 1}
-  - {r: 0.43543077, g: 0.57799524, b: 0.8962264, a: 1}
-  - {r: 0.8113208, g: 0.4018334, b: 0.7832951, a: 1}
-  - {r: 0.38892844, g: 0.8679245, b: 0.75884753, a: 1}
-  - {r: 0.8018868, g: 0.26855645, b: 0.26855645, a: 1}
-  - {r: 0.3228142, g: 0.2232111, b: 0.8301887, a: 1}
-  - {r: 0.9245283, g: 0.8857755, b: 0.42301533, a: 1}
-  - {r: 0.28435388, g: 0.8490566, b: 0.31043765, a: 1}
-  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0.9019608, g: 0.53333336, b: 0.6039216, a: 1}
+  - {r: 0.8784314, g: 0.4627451, b: 0.29803923, a: 1}
+  - {r: 0.9647059, g: 0.7607843, b: 0.3137255, a: 1}
+  - {r: 0.8980392, g: 0.5882353, b: 0.3137255, a: 1}
+  - {r: 0.5411765, g: 0.7529412, b: 0.4, a: 1}
+  - {r: 0.4392157, g: 0.78039217, b: 0.6901961, a: 1}
+  - {r: 0.49803922, g: 0.74509805, b: 0.91764706, a: 1}
+  - {r: 0.48235294, g: 0.6156863, b: 0.87058824, a: 1}
+  - {r: 0.827451, g: 0.65882355, b: 0.83137256, a: 1}
+  - {r: 0.69777423, g: 0.48393556, b: 0.7075472, a: 1}
+  - {r: 0.52574664, g: 0.33397114, b: 0.745283, a: 1}
 --- !u!58 &2611631873588650619
 CircleCollider2D:
   m_ObjectHideFlags: 0
