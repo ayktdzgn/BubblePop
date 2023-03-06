@@ -21,14 +21,6 @@ public class Game : MonoBehaviour
         _view.Bind(this);
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            //Debug.Log(1<<10);
-        }
-    }
-
     private void Start()
     {
         if (currentLevelNo.Value == _levels.Count)
@@ -42,6 +34,14 @@ public class Game : MonoBehaviour
     public void StartLevel()
     {
         _currentLevel.Play();
+    }
+
+    public void RetryLevel()
+    {
+        DestroyImmediate(_currentLevel.gameObject);
+        _currentLevel = Instantiate(_levels[currentLevelNo.Value].gameObject).GetComponent<LevelBase>();
+
+        _currentLevel.Init(_view,this);
     }
 
     public void NextLevel()

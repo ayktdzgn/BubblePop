@@ -4,8 +4,9 @@ using UnityEngine;
 using DG.Tweening;
 using System.Linq;
 
-public class MatchController : MonoBehaviour
+public class GridController : MonoBehaviour
 {
+    Level _level;
     Grid _grid;
 
     List<Bubble> _matchBubbleList = new List<Bubble>();
@@ -14,6 +15,7 @@ public class MatchController : MonoBehaviour
 
     private void Awake()
     {
+        _level = GetComponentInParent<Level>();
         _grid = GetComponent<Grid>();
     }
 
@@ -30,7 +32,7 @@ public class MatchController : MonoBehaviour
         CheckIndexForMatch(index);
     }
 
-    void CheckIndexForMatch(Vector2Int index)
+    void CheckIndexForMatch(Vector2Int index, int combo = 0)
     {
         _matchBubbleList.Clear();
         _checkedIndexList.Clear();
@@ -38,10 +40,10 @@ public class MatchController : MonoBehaviour
 
         //Others shouldn't check this index
         _checkedIndexList.Add(index);
-        CheckNeighboursMatch(index);
+        CheckNeighboursMatch(index,combo);
     }
 
-    void CheckNeighboursMatch(Vector2Int index)
+    void CheckNeighboursMatch(Vector2Int index ,int combo = 0)
     {
         //Get Neighbours
         var neighbours = _grid.NeighbourList(index);
@@ -78,74 +80,42 @@ public class MatchController : MonoBehaviour
         {
             Vector2Int checkIndex = _checkAfterIndexList[0];
             _checkAfterIndexList.RemoveAt(0);
-            CheckNeighboursMatch(checkIndex);
+            CheckNeighboursMatch(checkIndex,combo);
         }
         else
         {
             if (_matchBubbleList.Count > 0)
-                StartCoroutine(MergeBubblesIE(_matchBubbleList));//MergeBubbles(_matchBubbleList);
+                StartCoroutine(MergeBubblesIE(_matchBubbleList,combo));
         }
     }
 
-    public void MergeBubbles(List<Bubble> bubbleList)
+    IEnumerator MergeBubblesIE(List<Bubble> bubbleList, int combo = 0)
     {
-        //Find bubble index which was added last in the list
-        int lastBubbleIndex = bubbleList.Count - 1;
-        for (int i = 0; i < lastBubbleIndex; i++)
-        {
-            //Set Tile occupied false
-            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].IsOccupied = false;
-            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].Bubble = null;
-
-            //First bubble moved first, if it reach then others too
-            if (i == 0)
-                bubbleList[i].transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.2f).OnComplete(() =>
-                {
-                    bubbleList[i].Pop();
-
-                    int powerOfTwo = FindPowerOfTwo(bubbleList[lastBubbleIndex].Value) + 1;
-                    int newValue = Mathf.RoundToInt(Mathf.Pow(2, powerOfTwo + lastBubbleIndex));
-                    bubbleList[lastBubbleIndex].SetBubbleProperties(newValue);
-
-                    //Merge olduktan sonra yeni oluşan bubble ile etrafında merge var mı kontrollü
-                    CheckIndexForMatch(bubbleList[lastBubbleIndex].Index);
-                });
-            else
-            {
-                var bubble = bubbleList[i];
-                bubble.transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.2f).OnComplete(() => { bubble.Pop(); });
-
-            }
-        }
-
-        for (int i = 0; i < lastBubbleIndex; i++)
-        {
-            //todo: Warn neighbours for falling
-            CheckForFallingNeighbours(bubbleList[i].Index);
-        }
-    }
-
-    IEnumerator MergeBubblesIE(List<Bubble> bubbleList)
-    {
+        int newCombo = combo; 
         //Find bubble index which was added last in the list
         int mergedCount = 0;
         int lastBubbleIndex = bubbleList.Count - 1;
+        bool isNeedNewRow = false;
         for (int i = 0; i < lastBubbleIndex; i++)
         {
             //Set Tile occupied false
             _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].IsOccupied = false;
             _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].Bubble = null;
-
+            //If TopRow has a empty spot need to spawn new row
+            if (bubbleList[i].Index.y >= _grid.gridSize.y - 1)
+                isNeedNewRow = true;
             //First bubble moved first, if it reach then others too
             bubbleList[i].transform.DOMove(bubbleList[lastBubbleIndex].transform.position, 0.35f).OnComplete(() => { mergedCount++; });
             bubbleList[i].PopEffect();
         }
         yield return new WaitUntil(()=> mergedCount >= bubbleList.Count - 1);
-        Debug.Log(mergedCount + "/" + bubbleList.Count);
 
         int powerOfTwo = FindPowerOfTwo(bubbleList[lastBubbleIndex].Value) + 1;
         int newValue = Mathf.RoundToInt(Mathf.Pow(2, powerOfTwo + lastBubbleIndex));
         bubbleList[lastBubbleIndex].SetBubbleProperties(newValue);
+
+        newCombo++;
+        GameEvent.OnMergeEvent?.Invoke(newValue, newCombo);
 
         for (int i = 0; i < lastBubbleIndex; i++)
         {
@@ -154,9 +124,12 @@ public class MatchController : MonoBehaviour
             CheckForFallingNeighbours(bubbleList[i].Index);
         }
 
+        if (isNeedNewRow)
+            CreateNewRow();
         //Merge olduktan sonra yeni oluşan bubble ile etrafında merge var mı kontrollü
-        Debug.Log(bubbleList[lastBubbleIndex].Index, bubbleList[lastBubbleIndex].gameObject);
-        CheckIndexForMatch(bubbleList[lastBubbleIndex].Index);
+
+        CheckLowLevel();
+        CheckIndexForMatch(bubbleList[lastBubbleIndex].Index, newCombo);
 
         yield return new WaitForEndOfFrame();
     }
@@ -242,6 +215,30 @@ public class MatchController : MonoBehaviour
             return neighbourBubble;
         }
         return null;
+    }
+
+    void CheckLowLevel()
+    {
+        int lowerY = int.MaxValue;
+        for (int x = 0; x < _grid.gridSize.x; x++)
+        {
+            for (int y = 0; y < _grid.gridSize.y; y++)
+            {
+                if (_grid.TileArr[x, y].IsOccupied && y < lowerY)
+                    lowerY = y;
+            }
+        }
+
+        if (_grid.gridSize.y - lowerY <= 2)
+            CreateNewRow();
+    }
+
+    void CreateNewRow()
+    {
+        _grid.AddNewRow();
+        _level.CreateRandomBubbleRow(_grid.gridSize.y - 1, _grid.gridSize.x);
+
+        CheckLowLevel();
     }
 
     void PushNeighbours(Vector3 origin, List<Vector2Int> neighbourList)

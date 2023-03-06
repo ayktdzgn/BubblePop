@@ -3,9 +3,18 @@ using UnityEngine.Events;
 
 public static class GameEvent
 {
+    public class OnLevelWin : UnityEvent { }
+    public static readonly OnLevelWin OnLevelWinEvent = new OnLevelWin();
+
+    public class OnLevelFail: UnityEvent { }
+    public static readonly OnLevelFail OnLevelFailEvent = new OnLevelFail();
+
     //Score Change
-    public class OnMerge : UnityEvent<int> { }
+    public class OnMerge : UnityEvent<int,int> { }
     public static readonly OnMerge OnMergeEvent = new OnMerge();
+
+    public class OnCombo : UnityEvent<int> { }
+    public static readonly OnCombo OnComboEvent = new OnCombo();
 
     public class OnBubbleReachTarget : UnityEvent<Vector2Int> { }
     public static readonly OnBubbleReachTarget OnBubbleReachTargetEvent = new OnBubbleReachTarget();

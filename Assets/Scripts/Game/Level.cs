@@ -10,6 +10,8 @@ public class Level : LevelBase
     [SerializeField] Bubble _bubble;
     [SerializeField] BubbleSpawner _bubbleSpawnerGrid;
     [SerializeField] BubbleSpawner _bubbleSpawnerShoot;
+    int _comboCount = 0;
+    int _score=0;
 
     public Grid Grid { get => _grid; }
 
@@ -17,22 +19,32 @@ public class Level : LevelBase
     {
         base.Init(gameView,game);
         _player.OnLevelInit(this);
+        _gameView.UpdateProgress((float)_score / (float)_goalScore);
     }
 
     private void Start()
     {
+        GameEvent.OnMergeEvent.AddListener(BubbleMerge);
+
         _grid.CreateGrid();
         BubbleCreateOnStart(_createdBubbleRowCount);
     }
 
-    protected override void Update()
+    private void BubbleMerge(int value, int combo)
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            _grid.AddNewRow();
-            CreateRandomBubbleRow(_grid.gridSize.y-1,_grid.gridSize.x);
-        }
-    }
+        if (!_isPlaying) return;
+
+        Game.score.Value += value * combo;
+        _score += value * combo;
+
+        _gameView.UpdateProgress((float)_score / (float)_goalScore);
+
+        if (combo > 1)
+            GameEvent.OnComboEvent?.Invoke(combo);
+
+        if (_score >= _goalScore)
+            GameEvent.OnLevelWinEvent?.Invoke();
+    } 
 
     private void BubbleCreateOnStart(int rowCount)
     {
@@ -46,7 +58,7 @@ public class Level : LevelBase
         }
     }
 
-    private void CreateRandomBubbleRow(int row, int count)
+    public void CreateRandomBubbleRow(int row, int count)
     {
         for (int i = 0; i < count; i++)
         {

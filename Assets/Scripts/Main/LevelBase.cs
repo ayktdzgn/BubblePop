@@ -14,6 +14,15 @@ public abstract class LevelBase : MonoBehaviour
     protected virtual void Awake()
     {
         _player = GetComponentInChildren<PlayerBase>();
+
+        GameEvent.OnLevelWinEvent.AddListener(Win);
+        GameEvent.OnLevelFailEvent.AddListener(Fail);
+    }
+
+    private void OnDestroy()
+    {
+        GameEvent.OnLevelWinEvent.RemoveListener(Win);
+        GameEvent.OnLevelFailEvent.RemoveListener(Fail);
     }
 
     protected virtual void Update()
@@ -26,6 +35,8 @@ public abstract class LevelBase : MonoBehaviour
         gameObject.SetActive(true);
         _game = game;
         _gameView = gameView;
+        gameView.ResetLevelEndScreens();
+        gameView.ShowTapToPlay();
     }
 
     public virtual void Play()
@@ -38,5 +49,23 @@ public abstract class LevelBase : MonoBehaviour
     {
         _isPlaying = false;
         _player.OnLevelEnd();
+    }
+
+    private void Win()
+    {
+        if (!_isPlaying)
+            return;
+
+        End();
+        _gameView.LevelWin();
+    }
+
+    private void Fail()
+    {
+        if (!_isPlaying)
+            return;
+
+        End();
+        _gameView.LevelFail();
     }
 }
