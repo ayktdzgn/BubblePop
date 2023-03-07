@@ -44,7 +44,7 @@ public class Level : LevelBase
 
         if (_score >= _goalScore)
             GameEvent.OnLevelWinEvent?.Invoke();
-    } 
+    }
 
     private void BubbleCreateOnStart(int rowCount)
     {

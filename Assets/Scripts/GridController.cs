@@ -128,6 +128,19 @@ public class GridController : MonoBehaviour
             CreateNewRow();
         //Merge olduktan sonra yeni oluşan bubble ile etrafında merge var mı kontrollü
 
+        //2048 or bigger
+        if (newValue >= 2048)
+        {
+            bubbleList[lastBubbleIndex].PopEffect();
+            bubbleList[lastBubbleIndex].Pop();
+
+            foreach (var item in _grid.NeighbourList(bubbleList[lastBubbleIndex].Index))
+            {
+                _grid.TileArr[item.x, item.y].Bubble.PopEffect();
+                _grid.TileArr[item.x, item.y].Bubble.Pop();
+            }
+        }
+
         CheckLowLevel();
         CheckIndexForMatch(bubbleList[lastBubbleIndex].Index, newCombo);
 

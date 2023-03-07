@@ -15,19 +15,22 @@ public class Game : MonoBehaviour
 
     private void Awake()
     {
-        currentLevelNo = new ReactiveProperty<int>(0);
-        score = new ReactiveProperty<int>(0);
-
         _view.Bind(this);
     }
 
     private void Start()
     {
-        if (currentLevelNo.Value == _levels.Count)
-        {
-            currentLevelNo.Value = (currentLevelNo.Value % _levels.Count);
-        }
-        _currentLevel = Instantiate(_levels[currentLevelNo.Value].gameObject).GetComponent<LevelBase>();
+        currentLevelNo = new ReactiveProperty<int>(0);
+        score = new ReactiveProperty<int>(0);
+
+        currentLevelNo.Value = PlayerPrefs.GetInt("Level", 0);
+        currentLevelNo.Subscribe(ev => { PlayerPrefs.SetInt("Level", ev); _view.UpdateLevelTexts(); });
+
+        score.Value = PlayerPrefs.GetInt("Score",0);
+        score.Subscribe(ev => { PlayerPrefs.SetInt("Score",ev); });
+
+        GetCurrentLevel();
+
         _currentLevel.Init(_view, this);
     }
 
@@ -39,8 +42,7 @@ public class Game : MonoBehaviour
     public void RetryLevel()
     {
         DestroyImmediate(_currentLevel.gameObject);
-        _currentLevel = Instantiate(_levels[currentLevelNo.Value].gameObject).GetComponent<LevelBase>();
-
+        GetCurrentLevel();
         _currentLevel.Init(_view,this);
     }
 
@@ -49,12 +51,21 @@ public class Game : MonoBehaviour
         DestroyImmediate(_currentLevel.gameObject);
         currentLevelNo.Value++;
 
-        if (currentLevelNo.Value == _levels.Count)
-        {
-            currentLevelNo.Value = (currentLevelNo.Value % _levels.Count);
-        }
-        _currentLevel = Instantiate(_levels[currentLevelNo.Value].gameObject).GetComponent<LevelBase>();
+        GetCurrentLevel();
 
         _currentLevel.Init(_view, this);
+    }
+
+    private void GetCurrentLevel()
+    {
+        if (currentLevelNo.Value >= _levels.Count)
+        {
+            int nextLevel = (currentLevelNo.Value % _levels.Count);
+            _currentLevel = Instantiate(_levels[nextLevel].gameObject).GetComponent<LevelBase>();
+        }
+        else
+        {
+            _currentLevel = Instantiate(_levels[currentLevelNo.Value].gameObject).GetComponent<LevelBase>();
+        }
     }
 }

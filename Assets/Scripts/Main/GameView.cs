@@ -24,6 +24,7 @@ public class GameView : MonoBehaviour
     public void Bind(Game game)
     {
         _game = game;
+        UpdateLevelTexts();
     }
 
     private void Start()
@@ -71,6 +72,12 @@ public class GameView : MonoBehaviour
 
         _levelFail.alpha = 0;
         _levelFail.blocksRaycasts = false;
+    }
+
+    public void UpdateLevelTexts()
+    {
+        _currentLevelText.text = (_game.currentLevelNo.Value + 1).ToString();
+        _nextLevelText.text = (_game.currentLevelNo.Value + 2).ToString();
     }
 
     public void LevelWin()

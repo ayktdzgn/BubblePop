@@ -27,7 +27,10 @@ public abstract class LevelBase : MonoBehaviour
 
     protected virtual void Update()
     {
-
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Fail();
+        }
     }
 
     public virtual void Init(GameView gameView, Game game)
