@@ -13,6 +13,8 @@ public class Tile : MonoBehaviour
 
     public void SetTileEmpty()
     {
+        if (!_isOccupied && _bubble == null) return;
+
         _index = _bubble.Index;
         _isOccupied = false;
         _bubble = null;

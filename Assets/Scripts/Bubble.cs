@@ -65,7 +65,7 @@ public class Bubble : MonoBehaviour
     {
         if (_popParticle != null)
         {
-            var particle = Instantiate(_popParticle,transform.position,Quaternion.identity);
+            var particle = Instantiate(_popParticle,transform.position,Quaternion.identity,transform.parent);
             particle.startColor = _spriteRenderer.color;
             particle.Play();
         }

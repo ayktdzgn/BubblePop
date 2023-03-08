@@ -19,6 +19,9 @@ public static class GameEvent
     public class OnCombo : UnityEvent<int> { }
     public static readonly OnCombo OnComboEvent = new OnCombo();
 
+    public class OnPerfect : UnityEvent { }
+    public static readonly OnPerfect OnPerfectEvent = new OnPerfect();
+
     public class OnBubbleReachTarget : UnityEvent<Vector2Int> { }
     public static readonly OnBubbleReachTarget OnBubbleReachTargetEvent = new OnBubbleReachTarget();
 }

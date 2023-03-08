@@ -13,12 +13,14 @@ public class GameView : MonoBehaviour
     [SerializeField] CanvasGroup _levelWin;
     [SerializeField] CanvasGroup _levelFail;
     [SerializeField] TextMeshProUGUI _comboText;
+    [SerializeField] TextMeshProUGUI _perfectText;
     [SerializeField] TextMeshProUGUI _scoreText;
     [SerializeField] TextMeshProUGUI _currentLevelText;
     [SerializeField] TextMeshProUGUI _nextLevelText;
     [SerializeField] Image _progressBar;
 
     DG.Tweening.Core.TweenerCore<Vector3, Vector3, DG.Tweening.Plugins.Options.VectorOptions> _comboTween;
+    DG.Tweening.Core.TweenerCore<Vector3, Vector3, DG.Tweening.Plugins.Options.VectorOptions> _perfectTween;
     private Game _game;
 
     public void Bind(Game game)
@@ -30,6 +32,7 @@ public class GameView : MonoBehaviour
     private void Start()
     {
         GameEvent.OnComboEvent.AddListener(ShowCombo);
+        GameEvent.OnPerfectEvent.AddListener(ShowPerfect);
         _game.score.Subscribe((score) => ChangeScoreText(score));
     }
 
@@ -63,6 +66,16 @@ public class GameView : MonoBehaviour
         }
         _comboText.text = "x"+combo.ToString();
         _comboTween = _comboText.transform.DOScale(Vector3.one * 2, 1f).OnComplete(() => { _comboText.transform.localScale = Vector3.zero; });
+    }
+
+    private void ShowPerfect()
+    {
+        if (_perfectTween != null && _perfectTween.IsPlaying())
+        {
+            _perfectTween.Kill();
+            _perfectText.transform.localScale = Vector3.zero;
+        }
+        _perfectTween = _perfectText.transform.DOScale(Vector3.one * 2, 1f).OnComplete(() => { _perfectText.transform.localScale = Vector3.zero; });
     }
 
     public void ResetLevelEndScreens()

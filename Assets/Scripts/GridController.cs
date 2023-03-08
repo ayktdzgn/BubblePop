@@ -247,15 +247,21 @@ public class GridController : MonoBehaviour
 
     void CheckLowLevel()
     {
+        bool hasBubble = false;
         int lowerY = int.MaxValue;
         for (int x = 0; x < _grid.gridSize.x; x++)
         {
             for (int y = 0; y < _grid.gridSize.y; y++)
             {
+                //Check grid.Y -1 (because of create new row after top row pop)
+                if (y< _grid.gridSize.y - 1 && _grid.TileArr[x, y].IsOccupied)
+                    hasBubble = true;
                 if (_grid.TileArr[x, y].IsOccupied && y < lowerY)
                     lowerY = y;
             }
         }
+        if (!hasBubble)
+            GameEvent.OnPerfectEvent?.Invoke();
 
         if (_grid.gridSize.y - lowerY <= 2)
             CreateNewRow();
