@@ -13,6 +13,9 @@ public static class GameEvent
     public class OnMerge : UnityEvent<int,int> { }
     public static readonly OnMerge OnMergeEvent = new OnMerge();
 
+    public class OnCheckForFalling : UnityEvent<Vector2Int> { }
+    public static readonly OnCheckForFalling OnCheckForFallingEvent = new OnCheckForFalling();
+
     public class OnCombo : UnityEvent<int> { }
     public static readonly OnCombo OnComboEvent = new OnCombo();
 

@@ -47,7 +47,7 @@ public class Bubble : MonoBehaviour
         }
         else
         {
-            _spriteRenderer.color = _colors[Mathf.RoundToInt(FindPowerOfTwo(value))];
+            _spriteRenderer.color = _colors[Mathf.RoundToInt(FindPowerOfTwo(value)) % _colors.Length];
         }
     }
 

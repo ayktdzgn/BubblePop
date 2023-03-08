@@ -6,9 +6,19 @@ public class Tile : MonoBehaviour
 {
     bool _isOccupied;
     Bubble _bubble;
+    Vector2Int _index;
 
     public bool IsOccupied { get => _isOccupied; set => _isOccupied = value; }
     public Bubble Bubble { get => _bubble; set => _bubble = value; }
+
+    public void SetTileEmpty()
+    {
+        _index = _bubble.Index;
+        _isOccupied = false;
+        _bubble = null;
+
+        GameEvent.OnCheckForFallingEvent?.Invoke(_index);
+    }
 
     private void OnDrawGizmos()
     {

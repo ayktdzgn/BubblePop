@@ -10,6 +10,7 @@ public class Level : LevelBase
     [SerializeField] Bubble _bubble;
     [SerializeField] BubbleSpawner _bubbleSpawnerGrid;
     [SerializeField] BubbleSpawner _bubbleSpawnerShoot;
+    [SerializeField] AudioSource _audioSource;
     int _comboCount = 0;
     int _score=0;
 
@@ -33,6 +34,16 @@ public class Level : LevelBase
     private void BubbleMerge(int value, int combo)
     {
         if (!_isPlaying) return;
+
+        if (value >= 2048)
+            Taptic.Heavy();
+        else if (combo > 2)
+            Taptic.Medium();
+        else
+            Taptic.Light();
+
+        _audioSource.pitch = Mathf.Clamp( 1f + (float)combo * 0.25f,1f,2.1f);
+        _audioSource.Play();
 
         Game.score.Value += value * combo;
         _score += value * combo;

@@ -29,7 +29,7 @@ public abstract class LevelBase : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            Fail();
+            //Fail();
         }
     }
 

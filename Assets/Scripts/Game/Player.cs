@@ -104,6 +104,7 @@ public class Player : PlayerBase
     public void SetShootAim(Vector3 shootPos)
     {
         if (!_isReadyToShoot) return;
+        if (shootPos.y <= _shootPoint.position.y) return;
 
         var hitData = Physics2D.Raycast(_shootPoint.position, (shootPos - _shootPoint.position).normalized, _lineMaxRange, _hitLayers);
 

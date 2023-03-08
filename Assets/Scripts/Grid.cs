@@ -12,6 +12,8 @@ public class Grid : MonoBehaviour
     public float tileSize = 0.9f;
     [SerializeField] Tile _tilePrefab;
     Tile[,] _tileArr;
+    Vector3 _gridPos;
+    DG.Tweening.Core.TweenerCore<Vector3, Vector3, DG.Tweening.Plugins.Options.VectorOptions> _gridMoveTween;
 
     public Tile[,] TileArr { get => _tileArr;}
 
@@ -33,9 +35,11 @@ public class Grid : MonoBehaviour
                 tile.transform.SetParent(transform);
             }
         }
+
+        _gridPos = transform.position;
     }
 
-    public void AddNewRow()
+    public void AddNewRow(Action callback)
     {
         gridSize = new Vector2Int(gridSize.x, gridSize.y + 1);
         Tile[,] tempArr = _tileArr;    
@@ -52,8 +56,10 @@ public class Grid : MonoBehaviour
             tile.transform.SetParent(transform);
         }
 
-        Vector3 newPos = transform.position + new Vector3(0, -tileSize * TILE_HEIGHT_OFFSET_RATIO, 0);
-        transform.DOMove(newPos , 0.2f); 
+        _gridPos = _gridPos + new Vector3(0, -tileSize * TILE_HEIGHT_OFFSET_RATIO, 0);
+        if (_gridMoveTween!= null && _gridMoveTween.IsPlaying())
+            _gridMoveTween.Kill();
+        _gridMoveTween = transform.DOMove(_gridPos, 0.2f).OnComplete(()=> { callback(); });
     }
 
     void RemoveOldRow()

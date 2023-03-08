@@ -6,6 +6,7 @@ using System.Linq;
 
 public class GridController : MonoBehaviour
 {
+    [SerializeField] Transform _failLine;
     Level _level;
     Grid _grid;
 
@@ -22,12 +23,16 @@ public class GridController : MonoBehaviour
     private void Start()
     {
         GameEvent.OnBubbleReachTargetEvent.AddListener(BubbleReachTarget);
+        GameEvent.OnCheckForFallingEvent.AddListener(CheckForFallingNeighbours);
     }
 
     void BubbleReachTarget(Vector2Int index)
     {
         var neighbours = _grid.NeighbourList(index);
         PushNeighbours(_grid.GetPositionForHexCordinate(index), neighbours);
+
+        if (_grid.GetPositionForHexCordinate(index).y < _failLine.position.y)
+            GameEvent.OnLevelFailEvent?.Invoke();
 
         CheckIndexForMatch(index);
     }
@@ -54,17 +59,17 @@ public class GridController : MonoBehaviour
             //If this index haven't checked before then check it
             if (!_checkedIndexList.Contains(neighbour))
             {
-                //kontrol edilmişler listesine ekliyoruz ki bir daha kontrol edilmesin
+                //Add it to checkList because don't want to check again
                 _checkedIndexList.Add(neighbour);
                 Bubble neighbourBubble = _grid.TileArr[neighbour.x, neighbour.y].Bubble;
 
                 if (neighbourBubble != null && bubble != null)
                 {
-                    //Bubble'lar match oluyorsa match olan bubble'ı geri döndürüyor bize
+                    //It returns matched bubbles
                     var matchedBubble = CheckMatch(bubble, neighbourBubble);
                     if (matchedBubble != null)
                     {
-                        //Daha önce eşleşmiş bubble değilse listeye ekliyoruz
+                        //If it haven't matched before, add to list
                         if (!_matchBubbleList.Contains(bubble))
                             _matchBubbleList.Add(bubble);
                         if (!_matchBubbleList.Contains(matchedBubble))
@@ -73,9 +78,9 @@ public class GridController : MonoBehaviour
                 }
             }
         }
-        //Komşuları Kontrol edilecek match olmuş bubble var mı
-        //varsa, o index'i alıp tekrardan fonksiyonu çalıştır
-        //yoksa, match olan bubble'ları birleştir 
+        //Is there any checkable neighbours after match
+        //if, Get that index and re-Func
+        //else, Merge mathed bubbles
         if (_checkAfterIndexList.Count > 0)
         {
             Vector2Int checkIndex = _checkAfterIndexList[0];
@@ -96,11 +101,12 @@ public class GridController : MonoBehaviour
         int mergedCount = 0;
         int lastBubbleIndex = bubbleList.Count - 1;
         bool isNeedNewRow = false;
+        bool isBigMergeNeedNewRow = false;
         for (int i = 0; i < lastBubbleIndex; i++)
         {
             //Set Tile occupied false
-            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].IsOccupied = false;
-            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].Bubble = null;
+            _grid.TileArr[bubbleList[i].Index.x, bubbleList[i].Index.y].SetTileEmpty();
+
             //If TopRow has a empty spot need to spawn new row
             if (bubbleList[i].Index.y >= _grid.gridSize.y - 1)
                 isNeedNewRow = true;
@@ -120,56 +126,68 @@ public class GridController : MonoBehaviour
         for (int i = 0; i < lastBubbleIndex; i++)
         {
             bubbleList[i].Pop();
-            //todo: Warn neighbours for falling
-            CheckForFallingNeighbours(bubbleList[i].Index);
         }
-
-        if (isNeedNewRow)
-            CreateNewRow();
-        //Merge olduktan sonra yeni oluşan bubble ile etrafında merge var mı kontrollü
 
         //2048 or bigger
         if (newValue >= 2048)
         {
-            bubbleList[lastBubbleIndex].PopEffect();
-            bubbleList[lastBubbleIndex].Pop();
-
-            foreach (var item in _grid.NeighbourList(bubbleList[lastBubbleIndex].Index))
-            {
-                _grid.TileArr[item.x, item.y].Bubble.PopEffect();
-                _grid.TileArr[item.x, item.y].Bubble.Pop();
-            }
+            isBigMergeNeedNewRow = BigMerge(bubbleList[lastBubbleIndex]);
+        }
+        else
+        {
+            //Check if there any merge around new bubble
+            CheckIndexForMatch(bubbleList[lastBubbleIndex].Index, newCombo);
         }
 
-        CheckLowLevel();
-        CheckIndexForMatch(bubbleList[lastBubbleIndex].Index, newCombo);
+        if (isNeedNewRow || isBigMergeNeedNewRow)
+            CreateNewRow();
 
         yield return new WaitForEndOfFrame();
+        CheckLowLevel();
+    }
+
+    //Return true if it needs newRow
+    bool BigMerge(Bubble bubble)
+    {
+        bool isNeedNewRow=false;
+        bubble.PopEffect();
+        bubble.Pop();
+
+        _grid.TileArr[bubble.Index.x, bubble.Index.y].SetTileEmpty();
+
+        if (bubble.Index.y >= _grid.gridSize.y - 1)
+            isNeedNewRow = true;
+
+        //Explode
+        foreach (var item in _grid.NeighbourList(bubble.Index))
+        {
+            if (!_grid.TileArr[item.x, item.y].IsOccupied) continue;
+            _grid.TileArr[item.x, item.y].Bubble.PopEffect();
+            _grid.TileArr[item.x, item.y].Bubble.Pop();
+
+            _grid.TileArr[item.x, item.y].SetTileEmpty();
+
+            if (item.y >= _grid.gridSize.y - 1)
+                isNeedNewRow = true;
+        }
+
+        return isNeedNewRow;
     }
 
     void CheckForFallingNeighbours(Vector2Int index)
     {
         var neighbours = _grid.NeighbourList(index);
-        bool isNeighbourFallen = false;
-        Vector2Int needToCheck = new Vector2Int(int.MaxValue , int.MaxValue);
 
         foreach (var neighbour in neighbours)
         {
             if(_grid.TileArr[neighbour.x, neighbour.y].IsOccupied)
-                isNeighbourFallen = CheckForFalling(neighbour);
-            if (isNeighbourFallen)
-            {
-                needToCheck = neighbour;
-                break;
-            }
+                CheckForFalling(neighbour);
         }
-        if (isNeighbourFallen)
-            CheckForFallingNeighbours(needToCheck);
     }
 
-    bool CheckForFalling(Vector2Int index)
+    void CheckForFalling(Vector2Int index)
     {
-        if (index.y >= _grid.gridSize.y-1) return false;
+        if (index.y >= _grid.gridSize.y-1) return;
         bool isFallen = false;
 
         //Check For Vertical
@@ -186,7 +204,7 @@ public class GridController : MonoBehaviour
         }
         else//odd
         {
-            if (index.x + 1 < _grid.gridSize.x-1)
+            if (index.x + 1 < _grid.gridSize.x)
             {
                 isFallen = !(_grid.TileArr[index.x + 1, index.y + 1].IsOccupied || _grid.TileArr[index.x, index.y + 1].IsOccupied);
             }else
@@ -212,11 +230,8 @@ public class GridController : MonoBehaviour
         if (isFallen)
         {
             _grid.TileArr[index.x, index.y].Bubble.Fall();
-            _grid.TileArr[index.x, index.y].IsOccupied = false;
-            _grid.TileArr[index.x, index.y].Bubble = null;
+            _grid.TileArr[index.x, index.y].SetTileEmpty();
         }
-
-        return isFallen;
     }
 
     Bubble CheckMatch(Bubble bubble, Bubble neighbourBubble)
@@ -244,14 +259,15 @@ public class GridController : MonoBehaviour
 
         if (_grid.gridSize.y - lowerY <= 2)
             CreateNewRow();
+
+        if (_grid.TileArr[0, lowerY].transform.position.y < _failLine.position.y)
+            GameEvent.OnLevelFailEvent?.Invoke();
     }
 
     void CreateNewRow()
     {
-        _grid.AddNewRow();
+        _grid.AddNewRow(CheckLowLevel);
         _level.CreateRandomBubbleRow(_grid.gridSize.y - 1, _grid.gridSize.x);
-
-        CheckLowLevel();
     }
 
     void PushNeighbours(Vector3 origin, List<Vector2Int> neighbourList)
